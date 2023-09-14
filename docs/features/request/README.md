@@ -2,7 +2,7 @@
 
 # When actions
 
-`When <identifier>, a <method> request to '<URL>'``
+`When <identifier>, a <method> request to '<URL>'`
 
 Example:
 
