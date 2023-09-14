@@ -1,11 +1,13 @@
 use std::str::FromStr;
 
 use cucumber::{then, when};
+use reqwest::header::GetAll;
 
 use crate::Env;
 
 enum HttpMethod {
     Get,
+    Post,
 }
 
 impl FromStr for HttpMethod {
@@ -14,14 +16,18 @@ impl FromStr for HttpMethod {
     fn from_str(input: &str) -> Result<HttpMethod, Self::Err> {
         match input {
             "get" => Ok(HttpMethod::Get),
+            "post" => Ok(HttpMethod::Post),
             _ => Err(()),
         }
     }
 }
 
 #[when(expr = "{word}, a {word} request to {string}")]
-async fn when_get_request(env: &mut Env, codename: String, _method: HttpMethod, url: String) {
-    let response = reqwest::get(url).await.unwrap();
+async fn when_get_request(env: &mut Env, codename: String, method: HttpMethod, url: String) {
+    let response = match method {
+        HttpMethod::Get => reqwest::get(url).await.unwrap(),
+        HttpMethod::Post => reqwest::Client::new().post(url).send().await.unwrap(),
+    };
     env.responses.insert(codename, response);
 }
 
