@@ -3,6 +3,7 @@
 # When actions
 
 `When <identifier>, a <method> request to '<URL>'``
+
 Example:
 
 `When health, a get request to 'http://localhost:8080/status'`
