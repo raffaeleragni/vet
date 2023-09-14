@@ -1,0 +1,26 @@
+name: Build
+on:
+  push:
+    branches:
+      - "master"
+    paths-ignore:
+      - "/docs"
+      - "README.md"
+  pull_request:
+    paths-ignore:
+      - "/docs"
+      - "README.md"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+      - name: "Cache"
+        uses: Swatinem/rust-cache@v2
+      - name: "Build"
+          cargo clippy --no-deps --tests -- -D warnings
+          cargo build
+          cargo test --verbose
+          cd tests
+          ./run.sh

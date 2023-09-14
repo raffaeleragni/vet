@@ -20,7 +20,13 @@ impl FromStr for HttpMethod {
 }
 
 #[when(expr = "{word}, a {word} request to {string}")]
-async fn when_get_request(_: &mut Env, codename: String, method: HttpMethod, url: String) {}
+async fn when_get_request(env: &mut Env, codename: String, _method: HttpMethod, url: String) {
+    let response = reqwest::get(url).await.unwrap();
+    env.responses.insert(codename, response);
+}
 
 #[then(expr = "{word} status is {int}")]
-async fn then_status_is(_: &mut Env, codename: String, status: u32) {}
+async fn then_status_is(env: &mut Env, codename: String, status: u16) {
+    let response = env.responses.get(&codename).expect("No response was found");
+    assert_eq!(response.status().as_u16(), status);
+}

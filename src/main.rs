@@ -1,6 +1,9 @@
 mod modules;
 
+use std::collections::HashMap;
+
 use cucumber::{cli, World};
+use reqwest::Response;
 
 #[derive(cli::Args, Clone)]
 pub struct Args {
@@ -11,7 +14,10 @@ pub struct Args {
 }
 
 #[derive(World, Debug, Default)]
-struct Env;
+pub struct Env {
+    #[cfg(feature = "request")]
+    pub responses: HashMap<String, Response>,
+}
 
 #[tokio::main]
 async fn main() {
