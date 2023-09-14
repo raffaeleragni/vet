@@ -1,7 +1,7 @@
 {
     "request": {
         "method": "GET",
-        "urlPath": "/status"
+        "urlPath": "/status0"
     },
     "response": {
         "status": 200

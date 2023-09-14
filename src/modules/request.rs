@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cucumber::{then, when};
+use cucumber::{gherkin::Step, then, when};
 use reqwest::header::GetAll;
 
 use crate::Env;
@@ -23,10 +23,31 @@ impl FromStr for HttpMethod {
 }
 
 #[when(expr = "{word}, a {word} request to {string}")]
-async fn when_get_request(env: &mut Env, codename: String, method: HttpMethod, url: String) {
+async fn when_request(env: &mut Env, codename: String, method: HttpMethod, url: String) {
     let response = match method {
         HttpMethod::Get => reqwest::get(url).await.unwrap(),
         HttpMethod::Post => reqwest::Client::new().post(url).send().await.unwrap(),
+    };
+    env.responses.insert(codename, response);
+}
+
+#[when(expr = "{word}, a {word} request with body to {string}")]
+async fn when_request_with_body(
+    env: &mut Env,
+    codename: String,
+    method: HttpMethod,
+    url: String,
+    step: &Step,
+) {
+    let json = step.docstring.as_ref().unwrap();
+    let response = match method {
+        HttpMethod::Get => reqwest::get(url).await.unwrap(),
+        HttpMethod::Post => reqwest::Client::new()
+            .post(url)
+            .body(json.to_string())
+            .send()
+            .await
+            .unwrap(),
     };
     env.responses.insert(codename, response);
 }
