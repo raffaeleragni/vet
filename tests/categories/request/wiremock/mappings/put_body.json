@@ -1,0 +1,14 @@
+{
+    "request": {
+        "method": "PUT",
+        "urlPath": "/put1",
+        "bodyPatterns": [
+            {
+                "equalToJson": "{}"
+            }
+        ]
+    },
+    "response": {
+        "status": 201
+    }
+}

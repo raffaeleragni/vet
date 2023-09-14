@@ -1,0 +1,9 @@
+{
+    "request": {
+        "method": "PUT",
+        "urlPath": "/put0"
+    },
+    "response": {
+        "status": 200
+    }
+}

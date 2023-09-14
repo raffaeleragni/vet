@@ -1,13 +1,15 @@
 use std::str::FromStr;
 
 use cucumber::{gherkin::Step, then, when};
-use reqwest::header::GetAll;
 
 use crate::Env;
 
 enum HttpMethod {
     Get,
     Post,
+    Put,
+    Delete,
+    Head,
 }
 
 impl FromStr for HttpMethod {
@@ -17,6 +19,9 @@ impl FromStr for HttpMethod {
         match input {
             "get" => Ok(HttpMethod::Get),
             "post" => Ok(HttpMethod::Post),
+            "put" => Ok(HttpMethod::Put),
+            "delete" => Ok(HttpMethod::Delete),
+            "head" => Ok(HttpMethod::Head),
             _ => Err(()),
         }
     }
@@ -27,6 +32,9 @@ async fn when_request(env: &mut Env, codename: String, method: HttpMethod, url: 
     let response = match method {
         HttpMethod::Get => reqwest::get(url).await.unwrap(),
         HttpMethod::Post => reqwest::Client::new().post(url).send().await.unwrap(),
+        HttpMethod::Put => reqwest::Client::new().put(url).send().await.unwrap(),
+        HttpMethod::Delete => reqwest::Client::new().delete(url).send().await.unwrap(),
+        HttpMethod::Head => reqwest::Client::new().head(url).send().await.unwrap(),
     };
     env.responses.insert(codename, response);
 }
@@ -48,6 +56,14 @@ async fn when_request_with_body(
             .send()
             .await
             .unwrap(),
+        HttpMethod::Put => reqwest::Client::new()
+            .put(url)
+            .body(json.to_string())
+            .send()
+            .await
+            .unwrap(),
+        HttpMethod::Delete => reqwest::Client::new().delete(url).send().await.unwrap(),
+        HttpMethod::Head => reqwest::Client::new().head(url).send().await.unwrap(),
     };
     env.responses.insert(codename, response);
 }
