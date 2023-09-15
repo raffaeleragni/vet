@@ -1,2 +1,2 @@
 #[cfg(feature = "request")]
-mod request;
+pub mod request;

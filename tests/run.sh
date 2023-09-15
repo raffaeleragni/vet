@@ -10,7 +10,7 @@ if [ ! -f $VET ]; then
     cd $CURDIR
 fi
 
-for i in categories/*; do
+for i in $CURDIR/categories/*; do
     cd $i
     . ./run.sh
     cd -
