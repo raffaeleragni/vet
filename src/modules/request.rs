@@ -3,13 +3,13 @@ use std::{collections::HashMap, str::FromStr};
 use cucumber::{gherkin::Step, given, then, when};
 use reqwest::{
     header::{HeaderMap, HeaderName},
-    Response,
+    RequestBuilder, Response,
 };
 
-use crate::Env;
+use crate::WorldEnv;
 
 #[derive(Debug, Default)]
-pub struct EnvRequest {
+pub struct Env {
     pub responses: HashMap<String, Response>,
     pub headers: HashMap<String, String>,
     pub next_headers: HashMap<String, String>,
@@ -21,6 +21,19 @@ enum HttpMethod {
     Put,
     Delete,
     Head,
+}
+
+impl HttpMethod {
+    fn for_url(&self, url: String) -> RequestBuilder {
+        let client = reqwest::Client::new();
+        match self {
+            HttpMethod::Get => client.get(url),
+            HttpMethod::Post => client.post(url),
+            HttpMethod::Put => client.put(url),
+            HttpMethod::Delete => client.delete(url),
+            HttpMethod::Head => client.head(url),
+        }
+    }
 }
 
 impl FromStr for HttpMethod {
@@ -38,7 +51,7 @@ impl FromStr for HttpMethod {
     }
 }
 
-fn apply_headers_from_env(env: &mut Env) -> HeaderMap {
+fn apply_headers_from_env(env: &mut WorldEnv) -> HeaderMap {
     let mut headers = HeaderMap::new();
     env.request.next_headers.retain(|k, v| {
         let k = HeaderName::from_str(&k.clone()).unwrap();
@@ -65,102 +78,46 @@ fn fill_headers_from_table(step: &Step, headers: &mut HashMap<String, String>) {
 }
 
 #[given(expr = "next request headers will be")]
-async fn given_next_headers(env: &mut Env, step: &Step) {
+async fn given_next_headers(env: &mut WorldEnv, step: &Step) {
     fill_headers_from_table(step, &mut env.request.next_headers);
 }
 
 #[given(expr = "all requests headers will be")]
-async fn given_all_headers(env: &mut Env, step: &Step) {
+async fn given_all_headers(env: &mut WorldEnv, step: &Step) {
     fill_headers_from_table(step, &mut env.request.headers);
 }
 
 #[when(expr = "{word}, a {word} request to {string}")]
-async fn when_request(env: &mut Env, codename: String, method: HttpMethod, url: String) {
-    let headers = apply_headers_from_env(env);
-    let response = match method {
-        HttpMethod::Get => reqwest::Client::new()
-            .get(url)
-            .headers(headers)
-            .send()
-            .await
-            .unwrap(),
-        HttpMethod::Post => reqwest::Client::new()
-            .post(url)
-            .headers(headers)
-            .send()
-            .await
-            .unwrap(),
-        HttpMethod::Put => reqwest::Client::new()
-            .put(url)
-            .headers(headers)
-            .send()
-            .await
-            .unwrap(),
-        HttpMethod::Delete => reqwest::Client::new()
-            .delete(url)
-            .headers(headers)
-            .send()
-            .await
-            .unwrap(),
-        HttpMethod::Head => reqwest::Client::new()
-            .head(url)
-            .headers(headers)
-            .send()
-            .await
-            .unwrap(),
-    };
+async fn when_request(env: &mut WorldEnv, codename: String, method: HttpMethod, url: String) {
+    let response = method
+        .for_url(url)
+        .headers(apply_headers_from_env(env))
+        .send()
+        .await
+        .unwrap();
     env.request.responses.insert(codename, response);
 }
 
 #[when(expr = "{word}, a {word} request with body to {string}")]
 async fn when_request_with_body(
-    env: &mut Env,
+    env: &mut WorldEnv,
     codename: String,
     method: HttpMethod,
     url: String,
     step: &Step,
 ) {
-    let json = step.docstring.as_ref().unwrap();
-    let headers = apply_headers_from_env(env);
-    let response = match method {
-        HttpMethod::Get => reqwest::Client::new()
-            .get(url)
-            .headers(headers)
-            .send()
-            .await
-            .unwrap(),
-        HttpMethod::Post => reqwest::Client::new()
-            .post(url)
-            .headers(headers)
-            .body(json.to_string())
-            .send()
-            .await
-            .unwrap(),
-        HttpMethod::Put => reqwest::Client::new()
-            .put(url)
-            .headers(headers)
-            .body(json.to_string())
-            .send()
-            .await
-            .unwrap(),
-        HttpMethod::Delete => reqwest::Client::new()
-            .delete(url)
-            .headers(headers)
-            .send()
-            .await
-            .unwrap(),
-        HttpMethod::Head => reqwest::Client::new()
-            .head(url)
-            .headers(headers)
-            .send()
-            .await
-            .unwrap(),
-    };
+    let response = method
+        .for_url(url)
+        .headers(apply_headers_from_env(env))
+        .body(step.docstring.as_ref().unwrap().to_string())
+        .send()
+        .await
+        .unwrap();
     env.request.responses.insert(codename, response);
 }
 
 #[then(expr = "{word} status is {int}")]
-async fn then_status_is(env: &mut Env, codename: String, status: u16) {
+async fn then_status_is(env: &mut WorldEnv, codename: String, status: u16) {
     let response = env
         .request
         .responses

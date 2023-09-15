@@ -1,7 +1,7 @@
 mod modules;
 
 use cucumber::{cli, World};
-use modules::request::EnvRequest;
+use modules::request;
 
 #[derive(cli::Args, Clone)]
 pub struct Args {
@@ -12,9 +12,9 @@ pub struct Args {
 }
 
 #[derive(World, Debug, Default)]
-pub struct Env {
+pub struct WorldEnv {
     #[cfg(feature = "request")]
-    pub request: EnvRequest,
+    pub request: request::Env,
 }
 
 #[tokio::main]
@@ -23,6 +23,9 @@ async fn main() {
     let args = opts.clone().custom;
 
     for target in args.targets {
-        Env::cucumber().with_cli(opts.clone()).run(target).await;
+        WorldEnv::cucumber()
+            .with_cli(opts.clone())
+            .run(target)
+            .await;
     }
 }
