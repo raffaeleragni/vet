@@ -1,4 +1,7 @@
 Feature: Requests
+  Background:
+    Given all requests headers will be
+      | X-All-Header| all headers |
   Scenario: Health check
     When health, a get request to 'http://localhost:8080/status0'
     Then health status is 200
@@ -26,3 +29,8 @@ Feature: Requests
   Scenario: HEAD
     When x, a head request to 'http://localhost:8080/head'
     Then x status is 200
+  Scenario: HEADERS
+    Given next request headers will be
+      | X-Custom-Header | custom value |
+    When my, a get request to 'http://localhost:8080/headers'
+    Then my status is 200

@@ -1,6 +1,7 @@
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
-use cucumber::{gherkin::Step, then, when};
+use cucumber::{gherkin::Step, given, then, when};
+use reqwest::header::{HeaderMap, HeaderName};
 
 use crate::Env;
 
@@ -27,14 +28,76 @@ impl FromStr for HttpMethod {
     }
 }
 
+fn apply_headers_from_env(env: &mut Env) -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    env.next_headers.retain(|k, v| {
+        let k = HeaderName::from_str(&k.clone()).unwrap();
+        let v = v.to_owned().parse().unwrap();
+        headers.insert(k, v);
+        false
+    });
+    for (k, v) in env.headers.clone() {
+        let k = HeaderName::from_str(&k.clone()).unwrap();
+        let v = v.clone().parse().unwrap();
+        headers.insert(k, v);
+    }
+    headers
+}
+
+fn fill_headers_from_table(step: &Step, headers: &mut HashMap<String, String>) {
+    if let Some(table) = step.table.as_ref() {
+        for row in table.rows.iter() {
+            let key = &row[0];
+            let value = &row[1];
+            headers.insert(key.trim().to_owned(), value.trim().to_owned());
+        }
+    }
+}
+
+#[given(expr = "next request headers will be")]
+async fn given_next_headers(env: &mut Env, step: &Step) {
+    fill_headers_from_table(step, &mut env.next_headers);
+}
+
+#[given(expr = "all requests headers will be")]
+async fn given_all_headers(env: &mut Env, step: &Step) {
+    fill_headers_from_table(step, &mut env.headers);
+}
+
 #[when(expr = "{word}, a {word} request to {string}")]
 async fn when_request(env: &mut Env, codename: String, method: HttpMethod, url: String) {
+    let headers = apply_headers_from_env(env);
     let response = match method {
-        HttpMethod::Get => reqwest::get(url).await.unwrap(),
-        HttpMethod::Post => reqwest::Client::new().post(url).send().await.unwrap(),
-        HttpMethod::Put => reqwest::Client::new().put(url).send().await.unwrap(),
-        HttpMethod::Delete => reqwest::Client::new().delete(url).send().await.unwrap(),
-        HttpMethod::Head => reqwest::Client::new().head(url).send().await.unwrap(),
+        HttpMethod::Get => reqwest::Client::new()
+            .get(url)
+            .headers(headers)
+            .send()
+            .await
+            .unwrap(),
+        HttpMethod::Post => reqwest::Client::new()
+            .post(url)
+            .headers(headers)
+            .send()
+            .await
+            .unwrap(),
+        HttpMethod::Put => reqwest::Client::new()
+            .put(url)
+            .headers(headers)
+            .send()
+            .await
+            .unwrap(),
+        HttpMethod::Delete => reqwest::Client::new()
+            .delete(url)
+            .headers(headers)
+            .send()
+            .await
+            .unwrap(),
+        HttpMethod::Head => reqwest::Client::new()
+            .head(url)
+            .headers(headers)
+            .send()
+            .await
+            .unwrap(),
     };
     env.responses.insert(codename, response);
 }
@@ -48,22 +111,40 @@ async fn when_request_with_body(
     step: &Step,
 ) {
     let json = step.docstring.as_ref().unwrap();
+    let headers = apply_headers_from_env(env);
     let response = match method {
-        HttpMethod::Get => reqwest::get(url).await.unwrap(),
+        HttpMethod::Get => reqwest::Client::new()
+            .get(url)
+            .headers(headers)
+            .send()
+            .await
+            .unwrap(),
         HttpMethod::Post => reqwest::Client::new()
             .post(url)
+            .headers(headers)
             .body(json.to_string())
             .send()
             .await
             .unwrap(),
         HttpMethod::Put => reqwest::Client::new()
             .put(url)
+            .headers(headers)
             .body(json.to_string())
             .send()
             .await
             .unwrap(),
-        HttpMethod::Delete => reqwest::Client::new().delete(url).send().await.unwrap(),
-        HttpMethod::Head => reqwest::Client::new().head(url).send().await.unwrap(),
+        HttpMethod::Delete => reqwest::Client::new()
+            .delete(url)
+            .headers(headers)
+            .send()
+            .await
+            .unwrap(),
+        HttpMethod::Head => reqwest::Client::new()
+            .head(url)
+            .headers(headers)
+            .send()
+            .await
+            .unwrap(),
     };
     env.responses.insert(codename, response);
 }

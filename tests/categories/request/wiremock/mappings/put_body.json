@@ -6,7 +6,12 @@
             {
                 "equalToJson": "{}"
             }
-        ]
+        ],
+        "headers": {
+            "X-All-Header": {
+                "equalTo": "all headers"
+            }
+        }
     },
     "response": {
         "status": 201

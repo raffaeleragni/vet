@@ -1,7 +1,12 @@
 {
     "request": {
         "method": "HEAD",
-        "urlPath": "/head"
+        "urlPath": "/head",
+        "headers": {
+            "X-All-Header": {
+                "equalTo": "all headers"
+            }
+        }
     },
     "response": {
         "status": 200

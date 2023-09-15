@@ -1,8 +1,11 @@
 {
     "request": {
-        "method": "PUT",
-        "urlPath": "/put0",
+        "method": "GET",
+        "urlPath": "/headers",
         "headers": {
+            "X-Custom-Header": {
+                "equalTo": "custom value"
+            },
             "X-All-Header": {
                 "equalTo": "all headers"
             }

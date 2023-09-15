@@ -17,6 +17,10 @@ pub struct Args {
 pub struct Env {
     #[cfg(feature = "request")]
     pub responses: HashMap<String, Response>,
+    #[cfg(feature = "request")]
+    pub headers: HashMap<String, String>,
+    #[cfg(feature = "request")]
+    pub next_headers: HashMap<String, String>,
 }
 
 #[tokio::main]

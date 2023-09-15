@@ -1,7 +1,12 @@
 {
     "request": {
         "method": "DELETE",
-        "urlPath": "/delete"
+        "urlPath": "/delete",
+        "headers": {
+            "X-All-Header": {
+                "equalTo": "all headers"
+            }
+        }
     },
     "response": {
         "status": 200
