@@ -6,7 +6,7 @@ export VET=$CURDIR/../target/debug/vet
 if [ ! -f $VET ]; then
     cd $CURDIR
     cd ..
-    cargo build
+    cargo build --all-features
     cd $CURDIR
 fi
 
