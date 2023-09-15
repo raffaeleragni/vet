@@ -8,6 +8,7 @@ edition = "2021"
 [features]
 default = ["request"]
 request = ["dep:reqwest"]
+kafka = ["dep:rdkafka"]
 
 [dependencies]
 clap = { version = "4.4.3", features = ["derive"] }
@@ -15,3 +16,4 @@ tokio = { version = "1.32.0", features = ["full"] }
 cucumber = "0.20.0"
 
 reqwest = { version = "0.11.20", optional = true }
+rdkafka = { version = "0.34.0", features = ["cmake-build"], optional = true  }

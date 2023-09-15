@@ -14,6 +14,8 @@ pub struct Args {
 pub struct WorldEnv {
     #[cfg(feature = "request")]
     pub request: modules::request::Env,
+    #[cfg(feature = "kafka")]
+    pub kafka: modules::kafka::Env,
 }
 
 #[tokio::main]
