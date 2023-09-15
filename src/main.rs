@@ -1,7 +1,6 @@
 mod modules;
 
 use cucumber::{cli, World};
-use modules::request;
 
 #[derive(cli::Args, Clone)]
 pub struct Args {
@@ -14,7 +13,7 @@ pub struct Args {
 #[derive(World, Debug, Default)]
 pub struct WorldEnv {
     #[cfg(feature = "request")]
-    pub request: request::Env,
+    pub request: modules::request::Env,
 }
 
 #[tokio::main]
