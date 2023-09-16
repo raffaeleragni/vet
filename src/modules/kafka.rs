@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use cucumber::gherkin::Step;
 use cucumber::{given, then, when};
 use rdkafka::client::DefaultClientContext;
 use rdkafka::consumer::{BaseConsumer, Consumer};
@@ -53,5 +54,44 @@ async fn then_topic_exists(env: &mut WorldEnv, topic: String) {
     let consumer = env.kafka.consumer();
     consumer
         .fetch_metadata(Some(topic.as_str()), Duration::from_secs(1))
+        .expect("Topic not found")
+        .topics()
+        .iter()
+        .next()
         .expect("Topic not found");
+}
+
+#[then(expr = "kafka topic {string} exists with settings:")]
+async fn then_topic_exists_with_settings(env: &mut WorldEnv, topic: String, step: &Step) {
+    let consumer = env.kafka.consumer();
+    let metadata = consumer
+        .fetch_metadata(Some(topic.as_str()), Duration::from_secs(1))
+        .expect("Topic not found");
+    let metadata = metadata.topics().iter().next().expect("Topic not found");
+    let partitions = metadata.partitions();
+    let partition_count = partitions.len();
+    let min_isr = partitions
+        .iter()
+        .map(|p| p.isr().iter().min().unwrap())
+        .min()
+        .unwrap()
+        .to_owned();
+    let replica_count = partitions
+        .iter()
+        .map(|p| p.replicas().iter().min().unwrap())
+        .min()
+        .unwrap()
+        .to_owned();
+    if let Some(table) = step.table.as_ref() {
+        for row in table.rows.iter() {
+            let key = &row[0];
+            let value = &row[1];
+            match key.as_str().trim() {
+                "Min ISR" => assert!(value.parse::<i32>().unwrap() <= min_isr),
+                "Replicas" => assert_eq!(replica_count, value.parse::<i32>().unwrap()),
+                "Partitions" => assert_eq!(partition_count, value.parse::<usize>().unwrap()),
+                _ => {}
+            }
+        }
+    }
 }
