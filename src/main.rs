@@ -16,6 +16,10 @@ pub struct WorldEnv {
     pub request: modules::request::Env,
     #[cfg(feature = "kafka")]
     pub kafka: modules::kafka::Env,
+    #[cfg(feature = "redis")]
+    pub redis: modules::redis::Env,
+    #[cfg(feature = "aerospike")]
+    pub aerospike: modules::aerospike::Env,
 }
 
 #[tokio::main]
