@@ -4,6 +4,7 @@ use cucumber::gherkin::Step;
 use cucumber::{given, then, when};
 use rdkafka::client::DefaultClientContext;
 use rdkafka::consumer::{BaseConsumer, Consumer};
+use rdkafka::producer::{BaseProducer, BaseRecord};
 
 use crate::WorldEnv;
 
@@ -38,6 +39,14 @@ impl Env {
             .expect("Consumer creation failed")
     }
 
+    fn producer(&self) -> BaseProducer {
+        ClientConfig::new()
+            .set("bootstrap.servers", self.brokers.as_str())
+            .set("session.timeout.ms", "5000")
+            .create()
+            .expect("Producer creation failed")
+    }
+
     fn topic_metadata(&self, topic: &str) -> TopicMetadata {
         let consumer = self.consumer();
         let metadata = consumer
@@ -64,6 +73,11 @@ impl Env {
             min_isr,
         }
     }
+
+    fn send_unkeyed_message(&self, topic: &str, message: &str) {
+        let producer = self.producer();
+        producer.send::<str, str>(BaseRecord::to(topic).payload(message)).expect("Failed to send");
+    }
 }
 
 #[given(expr = "kafka broker is {string}")]
@@ -72,6 +86,7 @@ async fn given_kafka_broker(env: &mut WorldEnv, brokers: String) {
 }
 
 #[when(expr = "kafka create topic {string}")]
+#[given(expr = "kafka has topic {string}")]
 async fn when_create_topic(env: &mut WorldEnv, topic: String) {
     let admin = env.kafka.admin_client();
     let opts = AdminOptions::new().operation_timeout(Some(Duration::from_secs(1)));
@@ -80,6 +95,12 @@ async fn when_create_topic(env: &mut WorldEnv, topic: String) {
         .create_topics(&[new_topic], &opts)
         .await
         .expect("Topic creation failed");
+}
+
+#[when(expr = "kafka topic {string} message sent:")]
+async fn when_message_sent(env: &mut WorldEnv, topic: String, step: &Step) {
+    let message = step.docstring.as_ref().unwrap().to_string();
+    env.kafka.send_unkeyed_message(topic.as_str(), message.as_str());
 }
 
 #[then(expr = "kafka topic {string} exists")]
