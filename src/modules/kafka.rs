@@ -4,7 +4,9 @@ use cucumber::gherkin::Step;
 use cucumber::{given, then, when};
 use rdkafka::client::DefaultClientContext;
 use rdkafka::consumer::{BaseConsumer, Consumer};
+use rdkafka::message::ToBytes;
 use rdkafka::producer::{BaseProducer, BaseRecord};
+use rdkafka::Message;
 
 use crate::WorldEnv;
 
@@ -76,7 +78,25 @@ impl Env {
 
     fn send_unkeyed_message(&self, topic: &str, message: &str) {
         let producer = self.producer();
-        producer.send::<str, str>(BaseRecord::to(topic).payload(message)).expect("Failed to send");
+        producer
+            .send::<str, str>(BaseRecord::to(topic).payload(message))
+            .expect("Failed to send");
+    }
+
+    fn topic_contains_unkeyed_message(&self, topic: &str, message: &str) -> bool {
+        let consumer = self.consumer();
+        for msg in consumer.iter() {
+            let Ok(msg) = msg else {
+                continue;
+            };
+            let Some(payload) = msg.payload() else {
+                continue;
+            };
+            if payload.eq(message.to_bytes()) {
+                return true;
+            }
+        }
+        false
     }
 }
 
@@ -100,7 +120,16 @@ async fn when_create_topic(env: &mut WorldEnv, topic: String) {
 #[when(expr = "kafka topic {string} message sent:")]
 async fn when_message_sent(env: &mut WorldEnv, topic: String, step: &Step) {
     let message = step.docstring.as_ref().unwrap().to_string();
-    env.kafka.send_unkeyed_message(topic.as_str(), message.as_str());
+    env.kafka
+        .send_unkeyed_message(topic.as_str(), message.as_str());
+}
+
+#[then(expr = "kafka topic {string} contains:")]
+async fn then_message_exists(env: &mut WorldEnv, topic: String, step: &Step) {
+    let message = step.docstring.as_ref().unwrap().to_string();
+    let contains = env
+        .kafka
+        .topic_contains_unkeyed_message(topic.as_str(), message.as_str());
 }
 
 #[then(expr = "kafka topic {string} exists")]
